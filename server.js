@@ -49,6 +49,12 @@ app.get('/api/hello', function (req, res) {
   res.json({ greeting: 'hello API' });
 });
 
+app.get('/api/shorturl/:code', (req,res)=>{
+  urlData.findOne({code: req.params.code}).select(['url']).exec((err,data)=>{
+    if(err) return console.log(err)
+    res.redirect(data.toObject().url)
+  })
+})
 
 
 app.route('/api/shorturl/new')
