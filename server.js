@@ -4,7 +4,6 @@ const cors = require('cors');
 const app = express();
 const mongoose = require('mongoose')
 const { reset } = require('nodemon');
-var num = 1
 
 // Basic Configuration
 const port = process.env.PORT || 3000;
@@ -13,25 +12,25 @@ mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopol
 
 const urlData = mongoose.model("urlData", {
   url: { type: String },
-  code: { type: Number, required: true},
-  name: {type: String},
-  count: {type: Number}
+  code: { type: Number, required: true },
+  name: { type: String },
+  count: { type: Number }
 
 })
 
-const incr = () =>{
-  urlData.findOneAndUpdate({'name': 'counter'}, {$inc : {'count' : 1}},{new: true},(err,data)=>{
+const incr = () => {
+  urlData.findOneAndUpdate({ 'name': 'counter' }, { $inc: { 'count': 1 } }, { new: true }, (err, data) => {
     if (err) return console.log(err)
-    console.log(data)
   })
 }
 
-const getNum = (req,res,next) => {
-  urlData.findOne({ name: 'counter' }).select(['count']).exec((err, count) => {
-    if (err) return console.log(err)
-    num = count.toObject().count
+const getNum = () => {
+  urlData.findOne({ name: 'counter' }).select(['count']).exec(async (err, data) => {
+    if (err)
+      return console.log(err);
+    var num = await data.toObject().count;
+    console.log('next count  ====== ' + num);
   })
-  next()
 }
 
 
@@ -54,25 +53,24 @@ app.get('/api/hello', function (req, res) {
 
 app.route('/api/shorturl/new')
   .post((req, res) => {
-    let regex = /^https?:\/\//
-    if (regex.test(req.body.url) === true) {
-      urlData.findOne({ name: 'counter' }).select(['count']).exec(async (err, count) => {
-        if (err)
-          return console.log(err);
-        num = await count.toObject().count;
-        console.log('num now' + num);
-      })
-      incr()// to increment the counter
-      urlData.create({ url: req.body.url, code: num }, (err) => {
-        if (err)
-          console.log(err);
-      })
-      res.send({ original_url: req.body.url, short_url: num })
-    }
-    else {
-      res.send({ error: 'Invalid URL' })
-    }
-    console.log('Data Sent')
+    urlData.findOne({ name: 'counter' }).select(['count']).exec( (err, data) => {
+      if (err) return console.log(err)
+      var num =  data.toObject().count
+      console.log('next count  ====== ' + num)
+      let regex = /^https?:\/\//
+      if (regex.test(req.body.url) === true) {
+        incr()// to increment the counter
+        urlData.create({ url: req.body.url, code: num }, (err) => {
+          if (err)
+            console.log(err);
+        })
+        res.send({ original_url: req.body.url, short_url: num })
+        console.log('Data Sent')
+      }
+      else {
+        res.send({ error: 'Invalid URL' })
+      }
+    })
   })
 
 app.listen(port, function () {
@@ -80,8 +78,8 @@ app.listen(port, function () {
 });
 
 
-      /* urlData.deleteMany({url: req.body.url}).then(function(){ 
-        console.log("Data deleted"); // Success 
-    }).catch(function(error){ 
-        console.log(error); // Failure 
-    });  */ 
+/* urlData.deleteMany({url: req.body.url}).then(function(){
+  console.log("Data deleted"); // Success
+}).catch(function(error){
+  console.log(error); // Failure
+});  */
